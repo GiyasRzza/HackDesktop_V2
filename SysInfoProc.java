@@ -23,7 +23,7 @@ public class SysInfoProc extends JFrame implements MySystemProc {
     private long whichDayLater;
     private String getDatesPath;
     private String getDateCountPath;
-    private final  String commandPath = "C:\\Users\\Public\\CommandEr.sql";
+    private final  String commandPath = "path";
 
     public SysInfoProc() {
     }
