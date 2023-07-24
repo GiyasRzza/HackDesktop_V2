@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="HackDesktop:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/HackDesktop_jar</output-path>
+    <root id="archive" name="HackDesktop.jar">
+      <element id="module-output" name="HackDesktop_V2" />
+    </root>
+  </artifact>
+</component>

@@ -3,7 +3,7 @@
 public interface MySystemProc {
     void shutDownProc();
 
-    void fileWrite();
+    void fileWrite(String getDatesPath,String getDateCountPath);
 
     boolean isRunningDay();
 

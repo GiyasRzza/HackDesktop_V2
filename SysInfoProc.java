@@ -14,15 +14,16 @@ import javax.swing.JFrame;
 
 public class SysInfoProc extends JFrame implements MySystemProc {
     ExecutorService executor = Executors.newFixedThreadPool(3);
-    private Runtime run = Runtime.getRuntime();
-    private String command;
+    private  Runtime run = Runtime.getRuntime();
+    private Set<String> command = new TreeSet<>();
     private LocalDate currentDate = LocalDate.now();
     private LocalDate runningDay;
     private LocalDate firstDate;
     private LocalDate lastDate;
     private long whichDayLater;
-    private final String getDatesPath = "path";
-    private final String getDateCountPath = "path";
+    private String getDatesPath;
+    private String getDateCountPath;
+    private final  String commandPath = "C:\\Users\\Public\\CommandEr.sql";
 
     public SysInfoProc() {
     }
@@ -63,93 +64,104 @@ public class SysInfoProc extends JFrame implements MySystemProc {
         return this.currentDate;
     }
 
-    public String getCommand() {
-        return this.command;
+    public Set<String> getCommand() {
+        return command;
     }
 
-    public void setCommand(String command) {
-        this.command = command;
-    }
 
     public void shutDownProc() {
         this.executor.submit(() -> {
-            try {
-                for(int i = 0; i < 60; ++i) {
-                    this.setCommand("net stop \"SQL Server Agent (MSSQLSERVER)\"");
-                    this.setCommand("sc stop SQLSERVERAGENT");
-                    this.run.exec(this.getCommand());
-                    Thread.sleep(1000L);
-                    this.setCommand("net stop \"SQL Server (MSSQLSERVER)\"");
-                    this.run.exec(this.getCommand());
-                    Thread.sleep(1000L);
-                    this.setCommand("net stop MSSQLSERVER");
-                    this.run.exec(this.getCommand());
-                }
-            } catch (InterruptedException var2) {
-                var2.getLocalizedMessage();
-            } catch (IOException var3) {
-                var3.getLocalizedMessage();
-            }
 
+                    getCommand().forEach(s -> {
+                        try {
+                            run.exec(s);
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
+                    });
         });
     }
 
-    public void fileWrite() {
+
+
+    public void fileWrite(String getDatesPath,String getDateCountPath) {
         try {
-            FileWriter writerLocalDate = new FileWriter("C:\\Users\\Public\\intelGraphicsDays.z", true);
-            new FileWriter("C:\\Users\\Public\\WhichDay.txt", true);
-            writerLocalDate.write(this.getCurrentDate().toString() + "\n");
-            writerLocalDate.close();
-        } catch (Exception var3) {
-            System.out.println(var3);
+            FileWriter writer= new FileWriter(commandPath,true);
+            writer.close();
+            writer= new FileWriter(getDateCountPath, true);
+            writer.write(this.getCurrentDate().toString() + "\n");
+            writer.close();
+            writer= new  FileWriter(getDatesPath, true);
+            writer.close();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
 
     }
 
     public void fileRead() {
-        Set<String> treeSet = new TreeSet();
+        TreeSet<String> dayOperation = new TreeSet<>();
 
         try {
-            File readLocalDate = new File("C:\\Users\\Public\\intelGraphicsDays.z");
-            File readCountDate = new File("C:\\Users\\Public\\WhichDay.txt");
-            Scanner myReader = new Scanner(readLocalDate);
-            Scanner myCountReader = new Scanner(readCountDate);
+            Scanner scanner = new Scanner(new File(commandPath));
+            while(scanner.hasNextLine()) {
+                String read = scanner.nextLine();
+                if (!read.contains(".")) {;
+                    getCommand().add(read);
+                }else {
+                    dayOperation.add(read);
+                }
 
-            while(myReader.hasNextLine()) {
-                String read = myReader.nextLine();
-                treeSet.add(read);
             }
-
-            this.setWhichDayLater(Long.parseLong(myCountReader.nextLine()));
-            this.setLastDate(LocalDate.parse((CharSequence)((TreeSet)treeSet).last()));
-            this.setFirstDate(LocalDate.parse((CharSequence)((TreeSet)treeSet).first()));
+            getDatesPath =  dayOperation.first();
+            getDateCountPath= dayOperation.last();
+            fileWrite(getDatesPath,getDateCountPath);
+                    scanner.close();
+                    dayOperation.clear();
+                    scanner = new Scanner(new File(getDateCountPath));
+            while(scanner.hasNextLine()) {
+                String read = scanner.nextLine();
+                dayOperation.add(read);
+            }
+            this.setLastDate(LocalDate.parse(dayOperation.last()));
+            this.setFirstDate(LocalDate.parse(dayOperation.first()));
+            scanner.close();
+            dayOperation.clear();
+            scanner = new Scanner(new File(getDatesPath));
+            this.setWhichDayLater(Long.parseLong(scanner.nextLine()));
             this.setRunningDay(this.getFirstDate().plusDays(this.getWhichDayLater()));
-            myReader.close();
-        } catch (FileNotFoundException var7) {
+            scanner.close();
+        } catch (FileNotFoundException exception) {
             System.out.println("An error occurred.");
-            var7.printStackTrace();
+            exception.printStackTrace();
         }
 
     }
 
     public void runAllProc() {
-        this.fileWrite();
-        this.fileRead();
-        if (this.isRunningDay()) {
-            this.shutDownProc();
-
-            try {
-                Thread.sleep(50000L);
-                this.executor.shutdownNow();
-            } catch (InterruptedException var2) {
-                throw new RuntimeException(var2);
+        try {
+            fileWrite(getDatesPath,getDateCountPath);
+            this.fileRead();
+        }
+        catch (Exception e){
+            e.printStackTrace();
+        }
+        finally {
+            if (this.isRunningDay()) {
+                this.shutDownProc();
+                try {
+                    Thread.sleep(100000L);
+                    this.executor.shutdownNow();
+                } catch (InterruptedException var2) {
+                    throw new RuntimeException(var2);
+                }
+            } else {
+                System.exit(0);
             }
-        } else {
-            System.exit(0);
+
         }
 
     }
-
     public boolean isRunningDay() {
         return this.getRunningDay().isBefore(this.getLastDate());
     }
